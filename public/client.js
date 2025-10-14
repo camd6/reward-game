@@ -1,59 +1,60 @@
-const socket = io();
-const loginDiv = document.getElementById("login");
-const gameDiv = document.getElementById("game");
-const usernameInput = document.getElementById("username");
-const passwordInput = document.getElementById("password");
-const loginBtn = document.getElementById("loginBtn");
-const msg = document.getElementById("loginMsg");
-const addPointsBtn = document.getElementById("addPoints");
-const userDisplay = document.getElementById("user");
-const pointsDisplay = document.getElementById("points");
-const leaderboardList = document.getElementById("leaderboard");
+async function $(s){return document.querySelector(s);}
+    const socket = io();
 
-let currentUser = null;
+    const authDiv = await $('#auth');
+    const gameDiv = await $('#game');
+    const username = await $('#username');
+    const email = await $('#email');
+    const password = await $('#password');
+    const msg = await $('#msg');
+    const userSpan = await $('#user');
+    const pointsSpan = await $('#points');
+    const registerBtn = await $('#registerBtn');
+    const loginBtn = await $('#loginBtn');
+    const earnBtn = await $('#earn');
+    const logoutBtn = await $('#logout');
+    const leaderboard = await $('#leaderboard');
 
-loginBtn.onclick = async () => {
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value.trim();
+    let currentUser = null;
 
-  if (!username || !password) {
-    msg.textContent = "Please fill both fields!";
-    return;
-  }
+    function showGame(user){ authDiv.style.display='none'; gameDiv.style.display='block'; userSpan.textContent=user.username; pointsSpan.textContent=user.points; currentUser=user.username; }
 
-  const res = await fetch("/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
+    registerBtn.onclick = async ()=>{
+      const res = await fetch('/api/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:username.value,email:email.value,password:password.value})});
+      const data = await res.json();
+      if(data.success) showGame(data.user); else msg.textContent=data.message||'error';
+    }
 
-  const data = await res.json();
+    loginBtn.onclick = async ()=>{
+      const res = await fetch('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:username.value,password:password.value})});
+      const data = await res.json();
+      if(data.success) showGame(data.user); else msg.textContent=data.message||'error';
+    }
 
-  if (data.success) {
-    currentUser = username;
-    loginDiv.style.display = "none";
-    gameDiv.style.display = "block";
-    userDisplay.textContent = username;
-    pointsDisplay.textContent = data.points;
-  } else {
-    msg.textContent = data.message;
-  }
-};
+    logoutBtn.onclick = async ()=>{
+      await fetch('/api/logout',{method:'POST'});
+      location.reload();
+    }
 
-addPointsBtn.onclick = () => {
-  socket.emit("addPoints", currentUser);
-};
+    earnBtn.onclick = ()=>{
+      socket.emit('earn', 1);
+    }
 
-socket.on("updateLeaderboard", (users) => {
-  leaderboardList.innerHTML = "";
-  users
-    .sort((a, b) => b.points - a.points)
-    .forEach((u) => {
-      const li = document.createElement("li");
-      li.textContent = `${u.username}: ${u.points}`;
-      leaderboardList.appendChild(li);
-      if (u.username === currentUser) {
-        pointsDisplay.textContent = u.points;
-      }
+    socket.on('leaderboard', (list)=>{
+      leaderboard.innerHTML='';
+      list.forEach(u=>{
+        const li=document.createElement('li');
+        li.textContent=`${u.username}: ${u.points}`;
+        leaderboard.appendChild(li);
+      });
     });
-});
+
+    socket.on('points', p=>{ pointsSpan.textContent=p; });
+
+    (async ()=>{
+      const res = await fetch('/api/me');
+      if(res.ok){
+        const data = await res.json();
+        if(data.success) showGame(data.user);
+      }
+    })();

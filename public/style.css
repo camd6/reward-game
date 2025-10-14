@@ -1,23 +1,7 @@
-body {
-  font-family: sans-serif;
-  background: #f4f4f4;
-  text-align: center;
-  margin-top: 50px;
-}
-input {
-  display: block;
-  margin: 10px auto;
-  padding: 10px;
-}
-button {
-  padding: 10px 20px;
-  cursor: pointer;
-  background-color: #4caf50;
-  border: none;
-  color: white;
-  border-radius: 5px;
-}
-#leaderboard {
-  list-style: none;
-  padding: 0;
-}
+body{font-family:Arial,Helvetica,sans-serif;background:#0f172a;color:#e6eef8;margin:0;padding:20px}
+    .container{max-width:640px;margin:40px auto;text-align:center}
+    input{padding:8px;margin:6px;border-radius:6px;border:1px solid #334155;width:80%}
+    button{padding:10px 14px;margin:6px;border-radius:8px;border:none;background:#06b6d4;color:#012;cursor:pointer}
+    ul{list-style:none;padding:0}
+    li{background:#021124;color:#fff;margin:6px auto;padding:8px;border-radius:6px;width:80%}
+    #msg{color:#ffcccb}
