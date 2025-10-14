@@ -1,60 +1,107 @@
-async function $(s){return document.querySelector(s);}
-    const socket = io();
+const msg = document.getElementById("msg");
+const game = document.getElementById("game");
+const auth = document.getElementById("auth");
+const userEl = document.getElementById("user");
+const pointsEl = document.getElementById("points");
+const leaderboardEl = document.getElementById("leaderboard");
 
-    const authDiv = await $('#auth');
-    const gameDiv = await $('#game');
-    const username = await $('#username');
-    const email = await $('#email');
-    const password = await $('#password');
-    const msg = await $('#msg');
-    const userSpan = await $('#user');
-    const pointsSpan = await $('#points');
-    const registerBtn = await $('#registerBtn');
-    const loginBtn = await $('#loginBtn');
-    const earnBtn = await $('#earn');
-    const logoutBtn = await $('#logout');
-    const leaderboard = await $('#leaderboard');
+const registerBtn = document.getElementById("registerBtn");
+const loginBtn = document.getElementById("loginBtn");
+const earnBtn = document.getElementById("earn");
+const logoutBtn = document.getElementById("logout");
 
-    let currentUser = null;
+let socket;
 
-    function showGame(user){ authDiv.style.display='none'; gameDiv.style.display='block'; userSpan.textContent=user.username; pointsSpan.textContent=user.points; currentUser=user.username; }
+// helper: show message
+function showMsg(text, isError = false) {
+  msg.textContent = text;
+  msg.style.color = isError ? "red" : "green";
+}
 
-    registerBtn.onclick = async ()=>{
-      const res = await fetch('/api/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:username.value,email:email.value,password:password.value})});
-      const data = await res.json();
-      if(data.success) showGame(data.user); else msg.textContent=data.message||'error';
-    }
+// check if user is logged in
+async function checkAuth() {
+  const res = await fetch("/api/me");
+  const data = await res.json();
+  if (data.success) {
+    showGame(data.user);
+  }
+}
 
-    loginBtn.onclick = async ()=>{
-      const res = await fetch('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:username.value,password:password.value})});
-      const data = await res.json();
-      if(data.success) showGame(data.user); else msg.textContent=data.message||'error';
-    }
+// show game area
+function showGame(user) {
+  auth.style.display = "none";
+  game.style.display = "block";
+  userEl.textContent = user.username;
+  pointsEl.textContent = user.points;
+  connectSocket();
+}
 
-    logoutBtn.onclick = async ()=>{
-      await fetch('/api/logout',{method:'POST'});
-      location.reload();
-    }
-
-    earnBtn.onclick = ()=>{
-      socket.emit('earn', 1);
-    }
-
-    socket.on('leaderboard', (list)=>{
-      leaderboard.innerHTML='';
-      list.forEach(u=>{
-        const li=document.createElement('li');
-        li.textContent=`${u.username}: ${u.points}`;
-        leaderboard.appendChild(li);
-      });
+// connect to socket.io for live leaderboard
+function connectSocket() {
+  socket = io();
+  socket.on("leaderboard", (data) => {
+    leaderboardEl.innerHTML = "";
+    data.forEach((entry, i) => {
+      const li = document.createElement("li");
+      li.textContent = `${i + 1}. ${entry.username} - ${entry.points}`;
+      leaderboardEl.appendChild(li);
     });
+  });
+  socket.on("points", (p) => (pointsEl.textContent = p));
+}
 
-    socket.on('points', p=>{ pointsSpan.textContent=p; });
+registerBtn.onclick = async () => {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const email = document.getElementById("email").value.trim();
 
-    (async ()=>{
-      const res = await fetch('/api/me');
-      if(res.ok){
-        const data = await res.json();
-        if(data.success) showGame(data.user);
-      }
-    })();
+  if (!username || !password) return showMsg("Missing fields", true);
+
+  const res = await fetch("/api/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password, email }),
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    showMsg("Registered successfully!");
+    showGame(data.user);
+  } else {
+    showMsg(data.message || "Registration failed", true);
+  }
+};
+
+loginBtn.onclick = async () => {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  if (!username || !password) return showMsg("Missing fields", true);
+
+  const res = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    showMsg("Logged in successfully!");
+    showGame(data.user);
+  } else {
+    showMsg(data.message || "Login failed", true);
+  }
+};
+
+earnBtn.onclick = () => {
+  if (socket) socket.emit("earn", 1);
+};
+
+logoutBtn.onclick = async () => {
+  await fetch("/api/logout", { method: "POST" });
+  socket?.disconnect();
+  game.style.display = "none";
+  auth.style.display = "block";
+  showMsg("Logged out.");
+};
+
+checkAuth();
