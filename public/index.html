@@ -1,14 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Reward Points Game</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reward Game</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>🎮 Reward Points Game</h1>
-  <p>Your Points: <span id="points">0</span></p>
-  <button id="earn">Earn Points</button>
+  <div id="login">
+    <h2>Login / Register</h2>
+    <input id="username" placeholder="Username" />
+    <input id="password" placeholder="Password" type="password" />
+    <button id="loginBtn">Login</button>
+    <p id="loginMsg"></p>
+  </div>
+
+  <div id="game" style="display:none;">
+    <h2>Welcome, <span id="user"></span>!</h2>
+    <button id="addPoints">Add Point</button>
+    <h3>Your Points: <span id="points">0</span></h3>
+    <h3>Leaderboard</h3>
+    <ul id="leaderboard"></ul>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
