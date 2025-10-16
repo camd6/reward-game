@@ -1,0 +1,91 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #3b82f6, #1e3a8a);
+  color: white;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-container {
+  text-align: center;
+}
+
+.google-btn {
+  display: inline-flex;
+  align-items: center;
+  background: white;
+  color: black;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.google-btn img {
+  width: 20px;
+  margin-right: 10px;
+}
+
+.top-bar {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+}
+
+.profile-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-dropdown img {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.profile-dropdown:hover img {
+  transform: scale(1.1);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  background: white;
+  color: black;
+  border-radius: 10px;
+  width: 180px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.profile-dropdown:hover .dropdown-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 10px 15px;
+  color: #1e3a8a;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: #eff6ff;
+}
+
+.logout {
+  color: #dc2626;
+}
