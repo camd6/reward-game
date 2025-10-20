@@ -15,40 +15,49 @@ const PORT = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ---------------------- MIDDLEWARE ----------------------
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-console.log("MONGO_URI present?", !!process.env.MONGO_URI);
-
+// ---------------------- DATABASE ----------------------
 if (!process.env.MONGO_URI) {
-  console.error("MONGO_URI is not set. Please set it in Render environment variables.");
+  console.error("❌ MONGO_URI missing. Add it in your Render environment variables.");
+  process.exit(1);
 }
 
-mongoose.connect(process.env.MONGO_URI || "", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB connection error:", err.message));
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
+// ---------------------- SESSION ----------------------
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "supersecret_session_key",
+    secret: process.env.SESSION_SECRET || "secretkey",
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === "production" }
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
   })
 );
 
+// ---------------------- PASSPORT SETUP ----------------------
 app.use(passport.initialize());
 app.use(passport.session());
 
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      callbackURL: "/auth/google/callback",
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL || "https://reward-game.onrender.com/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -57,9 +66,9 @@ passport.use(
           user = await User.create({
             googleId: profile.id,
             username: profile.displayName,
-            email: profile.emails && profile.emails[0] && profile.emails[0].value,
-            photo: profile.photos && profile.photos[0] && profile.photos[0].value,
-            points: 0
+            email: profile.emails[0].value,
+            photo: profile.photos[0].value,
+            points: 0,
           });
         }
         return done(null, user);
@@ -72,17 +81,15 @@ passport.use(
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id);
-    done(null, user);
-  } catch (err) {
-    done(err, null);
-  }
+  const user = await User.findById(id);
+  done(null, user);
 });
 
+// ---------------------- AUTH ROUTES ----------------------
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-app.get("/auth/google/callback",
+app.get(
+  "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
     res.redirect("/dashboard");
@@ -90,55 +97,51 @@ app.get("/auth/google/callback",
 );
 
 app.get("/logout", (req, res) => {
-  req.logout(() => {
-    res.redirect("/");
-  });
+  req.logout(() => res.redirect("/"));
 });
 
+// ---------------------- USER ROUTES ----------------------
 app.get("/user", (req, res) => {
   if (req.user) {
-    const { username, email, photo, points } = req.user;
-    res.json({ username, email, photo, points });
+    res.json(req.user);
   } else {
     res.status(401).json({ message: "Not logged in" });
   }
 });
 
-// POST add points
-app.post("/api/add-points", async (req, res) => {
-  if (!req.user) return res.status(401).json({ message: "Not logged in" });
+// Middleware to protect dashboard
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.redirect("/");
+}
+
+// ---------------------- GAME LOGIC ----------------------
+
+// Increment user points
+app.post("/add-points", ensureAuthenticated, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    user.points = (user.points || 0) + 1;
-    await user.save();
-    res.json({ points: user.points });
+    req.user.points += 1;
+    await req.user.save();
+    res.json({ points: req.user.points });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Error updating points" });
   }
 });
 
-app.get("/api/leaderboard", async (req, res) => {
-  try {
-    const top = await User.find().select("username points photo -_id").sort({ points: -1 }).limit(10);
-    res.json(top);
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
+// Leaderboard route
+app.get("/leaderboard", async (req, res) => {
+  const topUsers = await User.find().sort({ points: -1 }).limit(10);
+  res.json(topUsers);
 });
 
-// delete account
-app.delete('/delete-account', async (req, res) => {
-  if (!req.user) return res.status(401).json({ success: false, message: 'Not logged in' });
-  try {
-    await User.deleteOne({ _id: req.user.id });
-    req.logout(()=>{});
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
+// ---------------------- PAGE ROUTES ----------------------
+app.get("/", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "index.html"))
+);
 
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "public", "dashboard.html")));
+app.get("/dashboard", ensureAuthenticated, (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "dashboard.html"))
+);
 
+// ---------------------- START SERVER ----------------------
 app.listen(PORT, () => console.log("✅ Server running on port", PORT));
