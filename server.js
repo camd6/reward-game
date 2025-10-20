@@ -19,16 +19,24 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-mongoose.connect(process.env.MONGO_URI, {
+console.log("MONGO_URI present?", !!process.env.MONGO_URI);
+
+if (!process.env.MONGO_URI) {
+  console.error("MONGO_URI is not set. Please set it in Render environment variables.");
+}
+
+mongoose.connect(process.env.MONGO_URI || "", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-});
+}).then(() => console.log("MongoDB connected"))
+  .catch(err => console.error("MongoDB connection error:", err.message));
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "secretkey",
+    secret: process.env.SESSION_SECRET || "supersecret_session_key",
     resave: false,
     saveUninitialized: true,
+    cookie: { secure: process.env.NODE_ENV === "production" }
   })
 );
 
@@ -38,8 +46,8 @@ app.use(passport.session());
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientID: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
       callbackURL: "/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -49,8 +57,9 @@ passport.use(
           user = await User.create({
             googleId: profile.id,
             username: profile.displayName,
-            email: profile.emails[0].value,
-            photo: profile.photos[0].value,
+            email: profile.emails && profile.emails[0] && profile.emails[0].value,
+            photo: profile.photos && profile.photos[0] && profile.photos[0].value,
+            points: 0
           });
         }
         return done(null, user);
@@ -63,14 +72,17 @@ passport.use(
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
-  const user = await User.findById(id);
-  done(null, user);
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
 });
 
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-app.get(
-  "/auth/google/callback",
+app.get("/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
     res.redirect("/dashboard");
@@ -78,14 +90,51 @@ app.get(
 );
 
 app.get("/logout", (req, res) => {
-  req.logout(() => res.redirect("/"));
+  req.logout(() => {
+    res.redirect("/");
+  });
 });
 
 app.get("/user", (req, res) => {
   if (req.user) {
-    res.json(req.user);
+    const { username, email, photo, points } = req.user;
+    res.json({ username, email, photo, points });
   } else {
     res.status(401).json({ message: "Not logged in" });
+  }
+});
+
+// POST add points
+app.post("/api/add-points", async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: "Not logged in" });
+  try {
+    const user = await User.findById(req.user.id);
+    user.points = (user.points || 0) + 1;
+    await user.save();
+    res.json({ points: user.points });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const top = await User.find().select("username points photo -_id").sort({ points: -1 }).limit(10);
+    res.json(top);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// delete account
+app.delete('/delete-account', async (req, res) => {
+  if (!req.user) return res.status(401).json({ success: false, message: 'Not logged in' });
+  try {
+    await User.deleteOne({ _id: req.user.id });
+    req.logout(()=>{});
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

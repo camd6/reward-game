@@ -1,23 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard - Reward Points</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div class="top-bar">
-    <div class="profile-dropdown">
-      <img id="profile-pic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile" />
-      <div class="dropdown-menu">
-        <p id="user-email">Signed in as</p>
-        <a href="#" class="dropdown-item">Profile</a>
-        <a href="#" class="dropdown-item">Settings</a>
-        <a href="/logout" class="dropdown-item logout">Logout</a>
+<body class="dark-bg">
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">🎯 Reward Points</div>
+      <div class="right">
+        <div class="profile-dropdown" id="profileDropdown">
+          <img id="profilePic" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="avatar">
+          <div class="dropdown">
+            <div class="dropdown-header">
+              <div class="avatar-md"><img id="profilePicLarge" src="" alt=""></div>
+              <div class="user-info">
+                <div id="displayName">User</div>
+                <div id="displayEmail">email@example.com</div>
+              </div>
+            </div>
+            <div class="dropdown-actions">
+              <button id="deleteAccount" class="delete-button">Delete Account</button>
+              <a href="/logout" class="logout-link">Logout</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="card">
+        <div class="card-inner">
+          <h2 id="welcome">Welcome</h2>
+          <p class="points">Points: <span id="points">0</span></p>
+          <button id="earnBtn" class="earn-btn">+1 Point</button>
+        </div>
+      </section>
+
+      <section class="card leaderboard">
+        <h3>🏆 Leaderboard</h3>
+        <ul id="leaderboardList"></ul>
+      </section>
+    </main>
+  </div>
+
+  <div id="confirmModal" class="modal-hidden">
+    <div class="modal-card">
+      <h3>Delete account?</h3>
+      <p>This will permanently remove your account and points.</p>
+      <div class="modal-actions">
+        <button id="confirmDelete" class="desactivate">Yes, delete</button>
+        <button id="cancelDelete" class="cancel">Cancel</button>
       </div>
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>
