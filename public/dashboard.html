@@ -2,50 +2,47 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <title>Dashboard — Reward Game</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Dashboard - Reward Points</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="dark-bg">
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">🎯 Reward Points</div>
-      <div class="right">
-        <div class="profile-dropdown" id="profileDropdown">
-          <img id="profilePic" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="avatar">
-          <div class="dropdown">
-            <div class="dropdown-header">
-              <div class="avatar-md"><img id="profilePicLarge" src="" alt=""></div>
-              <div class="user-info">
-                <div id="displayName">User</div>
-                <div id="displayEmail">email@example.com</div>
-              </div>
+  <header class="topbar">
+    <div class="brand">🎯 Reward Points</div>
+    <div class="profile-wrap">
+      <div class="profile-dropdown">
+        <img id="profilePic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar" alt="avatar">
+        <div class="dropdown">
+          <div class="dropdown-header">
+            <img id="profilePicLarge" src="" class="avatar-md" alt="">
+            <div>
+              <div id="displayName">User</div>
+              <div id="displayEmail" class="muted small">email@example.com</div>
             </div>
-            <div class="dropdown-actions">
-              <button id="deleteAccount" class="delete-button">Delete Account</button>
-              <a href="/logout" class="logout-link">Logout</a>
-            </div>
+          </div>
+          <div class="dropdown-actions">
+            <button id="deleteAccount" class="delete-button">Delete Account</button>
+            <a href="/logout" class="logout-link">Logout</a>
           </div>
         </div>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <main class="content">
-      <section class="card">
-        <div class="card-inner">
-          <h2 id="welcome">Welcome</h2>
-          <p class="points">Points: <span id="points">0</span></p>
-          <button id="earnBtn" class="earn-btn">+1 Point</button>
-        </div>
-      </section>
+  <main class="main-grid">
+    <section class="card">
+      <h2 id="welcome">Welcome</h2>
+      <p class="muted">Points: <span id="points">0</span></p>
+      <button id="earnBtn" class="earn-btn">+1 Point</button>
+    </section>
 
-      <section class="card leaderboard">
-        <h3>🏆 Leaderboard</h3>
-        <ul id="leaderboardList"></ul>
-      </section>
-    </main>
-  </div>
+    <aside class="card leaderboard">
+      <h3>🏆 Leaderboard</h3>
+      <ul id="leaderboardList"></ul>
+    </aside>
+  </main>
 
+  <!-- confirm modal -->
   <div id="confirmModal" class="modal-hidden">
     <div class="modal-card">
       <h3>Delete account?</h3>
@@ -57,6 +54,6 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>
